@@ -5,6 +5,8 @@ var util = require('util');
 if (!process.env.PORT)
   process.env.PORT = 8080;
 
+var done;
+
 // Priprava povezave na podatkovno bazo
 var sqlite3 = require('sqlite3').verbose();
 var pb = new sqlite3.Database('chinook.sl3');
@@ -208,14 +210,18 @@ streznik.post('/prijava', function(zahteva, odgovor) {
     	  Address, City, State, Country, PostalCode, \
     	  Phone, Fax, Email, SupportRepId) \
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
-      //TODO: add fields and finalize
-      //stmt.run("", "", "", "", "", "", "", "", "", "", "", 3); 
-      //stmt.finalize();
+      stmt.run(polja.FirstName, polja.LastName, polja.Company,
+               polja.Address, polja.City, polja.State,
+               polja.Country, polja.PostalCode, polja.Phone,
+               polja.Fax, polja.Email, 3); 
+      stmt.finalize();
+      done = true;
     } catch (err) {
       napaka2 = true;
+      done = false;
     }
   
-    odgovor.end();
+    odgovor.redirect("/prijava");
   });
 })
 
@@ -223,7 +229,11 @@ streznik.post('/prijava', function(zahteva, odgovor) {
 streznik.get('/prijava', function(zahteva, odgovor) {
   vrniStranke(function(napaka1, stranke) {
       vrniRacune(function(napaka2, racuni) {
-        odgovor.render('prijava', {sporocilo: "", seznamStrank: stranke, seznamRacunov: racuni});  
+        if(done) {
+          odgovor.render('prijava', {sporocilo: "Stranka je bila uspešno registrirana.", seznamStrank: stranke, seznamRacunov: racuni});
+        } else {
+          odgovor.render('prijava', {sporocilo: "Prišlo je do napake pri registraciji nove stranke. Prosim preverite vnešene podatke in poskusite znova.", seznamStrank: stranke, seznamRacunov: racuni});
+        }  
       }) 
     });
 })
